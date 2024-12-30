@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf8" />
+    </head>
+    <body>
+        <button class="add">add</button>
+        <button class="reset">reset</button>
+        <button class="destroy">destroy</button>
+        <div class="result"></div>
+
+        <script src="../dist/index.umd.js"></script>
+        <script>
+            (() => {
+                const { DataBridge } = window.data;
+                const bridge = new DataBridge(
+                    DataBridge.postMessageEngine(parent, window)
+                );
+
+                let value = 0;
+
+                bridge.registreHandler("add", (add) => {
+                    value += add;
+                    document.querySelector(".result").innerHTML = value;
+                });
+
+                bridge.registreHandler("reset", () => {
+                    value = 0;
+                    document.querySelector(".result").innerHTML = "";
+                });
+
+                document
+                    .querySelector(".add")
+                    .addEventListener("click", () => bridge.call("add", 10));
+
+                document
+                    .querySelector(".reset")
+                    .addEventListener("click", () => bridge.call("reset"));
+
+                document
+                    .querySelector(".destroy")
+                    .addEventListener("click", () => bridge.destroy());
+            })();
+        </script>
+    </body>
+</html>
