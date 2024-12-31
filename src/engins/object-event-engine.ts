@@ -18,6 +18,10 @@ export class ObjectEventEngine implements DataBridgeEngine {
         this.event.on("message", this.subscribeHandler);
     }
 
+    unsubscribe(handler: DataBridgeEngineHandler) {
+        this.handlers.delete(handler);
+    }
+
     destroy() {
         this.event.off("message", this.subscribeHandler);
     }

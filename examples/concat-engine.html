@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <button class="add">add</button>
+        <button class="add-all">add all</button>
+        <div class="result"></div>
+
+        <iframe src="./post-message-child.html" class="frame"></iframe>
+
+        <script src="../dist/index.umd.js"></script>
+        <script>
+            const { DataBridge } = window.data;
+            const myHandlers = new Set();
+
+            const bridgeLocal = new DataBridge(DataBridge.postMessageEngine());
+            const bridgeFrame = new DataBridge(
+                DataBridge.postMessageEngine(
+                    document.querySelector(".frame").contentWindow,
+                    window
+                )
+            );
+
+            const concat = new DataBridge(
+                DataBridge.concatEngine(bridgeLocal, bridgeFrame)
+            );
+
+            let value = 0;
+            concat.registreHandler("add", (add) => {
+                value += add;
+                document.querySelector(".result").innerHTML = value;
+            });
+
+            document
+                .querySelector(".add")
+                .addEventListener("click", () => bridgeLocal.call("add", 10));
+
+            document
+                .querySelector(".add-all")
+                .addEventListener("click", () => concat.call("add", 1));
+        </script>
+    </body>
+</html>

@@ -29,6 +29,10 @@ export class PostMessageEngine implements DataBridgeEngine {
         );
     }
 
+    unsubscribe(handler: DataBridgeEngineHandler) {
+        this.handlers.delete(handler);
+    }
+
     destroy() {
         this.subscribeChannel?.removeEventListener(
             "message",

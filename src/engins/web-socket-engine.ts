@@ -2,6 +2,7 @@ import { safeJson } from "../helpers/safe-json";
 import { DataBridgeEngine, DataBridgeEngineHandler } from "../types";
 
 export class WebSocketEngine implements DataBridgeEngine {
+    private handlers = new Set<DataBridgeEngineHandler>();
     private socket!: WebSocket;
 
     constructor(url: string) {
@@ -20,7 +21,18 @@ export class WebSocketEngine implements DataBridgeEngine {
         this.socket.onerror = (error: any) => {
             console.log("Ошибка подключения ws: " + error.message);
         };
+
+        this.socket.onmessage = (message) => {
+            const data = safeJson(message.data, message.data);
+            this.handlers.forEach((item) => item(data));
+        };
     }
+
+    private subscribeHandler = (message: MessageEvent) => {
+        const data = safeJson(message.data, message.data);
+        this.handlers.forEach((item) => item(data));
+    };
+
     send(data: any) {
         if (!this.socket.readyState) {
             setTimeout(() => this.send(data), 100);
@@ -31,10 +43,11 @@ export class WebSocketEngine implements DataBridgeEngine {
     }
 
     subscribe(handler: DataBridgeEngineHandler) {
-        this.socket.onmessage = function (message) {
-            const data = safeJson(message.data, message.data);
-            handler(data);
-        };
+        this.handlers.add(handler);
+    }
+
+    unsubscribe(handler: DataBridgeEngineHandler) {
+        this.handlers.delete(handler);
     }
 
     destroy() {

@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+    <head></head>
+    <body>
+        <button class="add">add</button>
+        <div class="result"></div>
+
+        <script src="../dist/index.umd.js"></script>
+        <script>
+            const { DataBridge } = window.data;
+            const myHandlers = new Set();
+            const bridge = new DataBridge({
+                send: (data) => {
+                    myHandlers.forEach((item) => item(data));
+                },
+                subscribe: (handler) => {
+                    myHandlers.Set(handler);
+                },
+                destroy: () => {},
+            });
+
+            bridge.registreHandler("add", (add) => {
+                value += add;
+                document.querySelector(".result").innerHTML = value;
+            });
+
+            document
+                .querySelector(".add")
+                .addEventListener("click", () => bridge.call("add", 10));
+        </script>
+    </body>
+</html>

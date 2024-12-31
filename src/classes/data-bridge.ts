@@ -1,32 +1,21 @@
+import { ConcatEngine } from "../engins/concat-engine";
 import { ObjectEventEngine } from "../engins/object-event-engine";
 import { PostMessageEngine } from "../engins/post-message-engine";
 import { WebSocketEngine } from "../engins/web-socket-engine";
-import { DataBridgeEngine } from "../types";
+import {
+    BridgeEvent,
+    DataBridgeEngine,
+    DataBridgeInterface,
+    HandlerArgumentType,
+    Message,
+    RegistreHandlerReturnType,
+    RegistreHandlerType,
+} from "../types";
 
-export type HandlerArgumentType =
-    | Record<string, any>
-    | string
-    | number
-    | boolean;
-export type RegistreHandlerType = (
-    ...args: HandlerArgumentType[]
-) => HandlerArgumentType | Promise<HandlerArgumentType> | void;
+export class DataBridge implements DataBridgeInterface {
+    static concatEngine = (...args: DataBridgeInterface[]) =>
+        new ConcatEngine(...args);
 
-export interface Message {
-    event: BridgeEvent;
-    uuid: string;
-    payload: {
-        event: string;
-        args: HandlerArgumentType | HandlerArgumentType[];
-    };
-}
-
-export enum BridgeEvent {
-    Call = "call",
-    Response = "response",
-}
-
-export class DataBridge {
     static objectEventEngine = () => new ObjectEventEngine();
 
     static postMessageEngine = (
@@ -39,7 +28,7 @@ export class DataBridge {
     private requests = new Map<string, any>();
     private response = new Map<string, RegistreHandlerType>();
 
-    constructor(private engine: DataBridgeEngine) {
+    constructor(public engine: DataBridgeEngine) {
         engine.subscribe((data: Message) => {
             if (data.event === BridgeEvent.Response) {
                 const handler = this.requests.get(data.uuid);
@@ -48,20 +37,23 @@ export class DataBridge {
 
             if (data.event === BridgeEvent.Call) {
                 const handler = this.response.get(data.payload.event);
+                let args: RegistreHandlerReturnType = undefined;
+
                 if (handler) {
-                    const args = Array.isArray(data.payload.args)
+                    const handlerArgs = Array.isArray(data.payload.args)
                         ? data.payload.args
                         : [data.payload.args];
-
-                    this.engine.send({
-                        event: BridgeEvent.Response,
-                        uuid: data.uuid,
-                        payload: {
-                            event: data.event,
-                            args: handler(...args),
-                        },
-                    });
+                    args = handler(...handlerArgs);
                 }
+
+                this.engine.send({
+                    event: BridgeEvent.Response,
+                    uuid: data.uuid,
+                    payload: {
+                        event: data.event,
+                        args,
+                    },
+                });
             }
         });
     }
@@ -84,6 +76,10 @@ export class DataBridge {
 
     registreHandler(event: string, handler: RegistreHandlerType): void {
         this.response.set(event, handler);
+    }
+
+    getEngine() {
+        return this.engine;
     }
 
     destroy() {
